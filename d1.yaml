@@ -1,0 +1,124 @@
+
+substitutions:
+  name: d1
+  mqtt_path: homeassistant/switch/${name}
+
+esphome:
+  name: ${name}
+  platform: ESP8266
+  board: d1_mini
+  on_boot:
+    priority: -200
+    then:
+      - delay: 1s
+      - mqtt.publish_json:
+          topic: "${mqtt_path}/relay-a/config"
+          retain: False
+          payload: |-
+            root["name"] = "relay-a";
+            root["icon"] = "mdi:electric-switch";
+            root["state_topic"] = "${mqtt_path}/relay-a/state";
+            root["command_topic"] = "${mqtt_path}/relay-a/command";
+      - mqtt.publish_json:
+          topic: "${mqtt_path}/relay-b/config"
+          retain: False
+          payload: |-
+            root["name"] = "relay-b";
+            root["icon"] = "mdi:electric-switch";
+            root["state_topic"] = "${mqtt_path}/relay-b/state";
+            root["command_topic"] = "${mqtt_path}/relay-b/command";
+      - mqtt.publish_json:
+          topic: "${mqtt_path}/relay-c/config"
+          retain: False
+          payload: |-
+            root["name"] = "relay-c";
+            root["icon"] = "mdi:electric-switch";
+            root["state_topic"] = "${mqtt_path}/relay-c/state";
+            root["command_topic"] = "${mqtt_path}/relay-c/command";
+      - mqtt.publish_json:
+          topic: "${mqtt_path}/relay-d/config"
+          retain: False
+          payload: |-
+            root["name"] = "relay-d";
+            root["icon"] = "mdi:electric-switch";
+            root["state_topic"] = "${mqtt_path}/relay-d/state";
+            root["command_topic"] = "${mqtt_path}/relay-d/command";
+
+interval:
+  - interval: 30s
+    then:
+      - mqtt.publish:
+          topic: "d1/interval"
+          payload: !lambda |-
+            return id(homeassistant_time).now().strftime("INTERVAL: %Y-%m-%d %H:%M:%S");
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  ap:
+    ssid: "D1 Fallback Hotspot"
+    password: "iLDMF6auLgry"
+
+time:
+  - platform: homeassistant
+    id: homeassistant_time
+
+mqtt:
+  broker: "hass.h.pchak.net"
+  discovery: False
+  on_message:
+    - topic: "d1/ping"
+      payload: "TIME"
+      then:
+        - mqtt.publish:
+            topic: "d1/ping"
+            payload: !lambda |-
+              return id(homeassistant_time).now().strftime("TIME >> %Y-%m-%d %H:%M:%S");
+    - topic: "${mqtt_path}/relay-a/command"
+      payload: "ON"
+      then:
+        - mqtt.publish:
+            topic: "${mqtt_path}/relay-a/state"
+            payload: "ON"
+            retain: True
+    - topic: "${mqtt_path}/relay-a/command"
+      payload: "OFF"
+      then:
+        - mqtt.publish:
+            topic: "${mqtt_path}/relay-a/state"
+            payload: "OFF"
+            retain: True
+    - topic: "${mqtt_path}/relay-b/command"
+      payload: "ON"
+      then:
+        - mqtt.publish:
+            topic: "${mqtt_path}/relay-b/state"
+            payload: "ON"
+            retain: True
+    - topic: "${mqtt_path}/relay-b/command"
+      payload: "OFF"
+      then:
+        - mqtt.publish:
+            topic: "${mqtt_path}/relay-b/state"
+            payload: "OFF"
+            retain: True
+
+switch:
+   - platform: restart
+     name: "Restart"
+
+web_server:
+  port: 80
+
+captive_portal:
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  password: !secret api_password
+
+ota:
+  password: !secret ota_password
