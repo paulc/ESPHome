@@ -1,22 +1,53 @@
-esphome:
+
+substitutions:
   name: 4chrelay
+  mqtt_path: homeassistant/switch/${name}
+
+esphome:
+  name: ${name}
   platform: ESP8266
   board: esp01_1m
-#  on_boot:
-#    then:
-#      - mqtt.publish:
-#          topic: "homeassistant/status/4chrelay"
-#          payload: "STARTING"
-#      - delay: 2s
-#      - mqtt.publish:
-#          topic: "homeassistant/status/4chrelay"
-#          payload: "STARTING-2"
+  on_boot:
+    priority: -200
+    then:
+      - delay: 1s
+      - mqtt.publish_json:
+          topic: "${mqtt_path}/relay-a/config"
+          retain: True
+          payload: |-
+            root["name"] = "relay-a";
+            root["icon"] = "mdi:electric-switch";
+            root["state_topic"] = "${mqtt_path}/relay-a/state";
+            root["command_topic"] = "${mqtt_path}/relay-a/command";
+      - mqtt.publish_json:
+          topic: "${mqtt_path}/relay-b/config"
+          retain: True
+          payload: |-
+            root["name"] = "relay-b";
+            root["icon"] = "mdi:electric-switch";
+            root["state_topic"] = "${mqtt_path}/relay-b/state";
+            root["command_topic"] = "${mqtt_path}/relay-b/command";
+      - mqtt.publish_json:
+          topic: "${mqtt_path}/relay-c/config"
+          retain: True
+          payload: |-
+            root["name"] = "relay-c";
+            root["icon"] = "mdi:electric-switch";
+            root["state_topic"] = "${mqtt_path}/relay-c/state";
+            root["command_topic"] = "${mqtt_path}/relay-c/command";
+      - mqtt.publish_json:
+          topic: "${mqtt_path}/relay-d/config"
+          retain: True
+          payload: |-
+            root["name"] = "relay-d";
+            root["icon"] = "mdi:electric-switch";
+            root["state_topic"] = "${mqtt_path}/relay-d/state";
+            root["command_topic"] = "${mqtt_path}/relay-d/command";
 
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
 
-  # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
     ssid: "4Chrelay Fallback Hotspot"
     password: "TLnxL5BWoD1Q"
@@ -34,73 +65,80 @@ uart:
   tx_pin: GPIO1
   rx_pin: GPIO3
 
-# mqtt:
-#  broker: 192.168.1.167
-#  on_message:
-#    - topic: "homeassistant/switch/4chrelay-1/set"
-#      payload: "ON"
-#      then:
-#        - uart.write: [0xA0, 0x01, 0x01, 0xA2]
-#        - mqtt.publish:
-#            topic: "homeassistant/switch/4chrelay-1/state"
-#            payload: "ON"
-#    - topic: "homeassistant/switch/4chrelay-1/set"
-#      payload: "OFF"
-#      then:
-#        - uart.write: [0xA0, 0x01, 0x00, 0xA1]
-#        - mqtt.publish:
-#            topic: "homeassistant/switch/4chrelay-1/state"
-#            payload: "OFF"
 
 switch:
-   - platform: uart
-     name: "A2on"
-     data: [0xA0, 0x02, 0x01, 0xA3]
-   - platform: uart
-     name: "A2off"
-     data: [0xA0, 0x02, 0x00, 0xA2]
    - platform: restart
      name: "Restart"
 
+mqtt:
+  broker: !secret mqtt_broker
+  discovery: False
+  on_message:
+    - topic: "${mqtt_path}/relay-a/command"
+      payload: "ON"
+      then:
+        - uart.write: [0xA0, 0x01, 0x01, 0xA2]
+        - mqtt.publish:
+            topic: "${mqtt_path}/relay-a/state"
+            payload: "ON"
+            retain: True
+    - topic: "${mqtt_path}/relay-a/command"
+      payload: "OFF"
+      then:
+        - uart.write: [0xA0, 0x01, 0x00, 0xA1]
+        - mqtt.publish:
+            topic: "${mqtt_path}/relay-a/state"
+            payload: "OFF"
+            retain: True
+    - topic: "${mqtt_path}/relay-b/command"
+      payload: "ON"
+      then:
+        - uart.write: [0xA0, 0x02, 0x01, 0xA3]
+        - mqtt.publish:
+            topic: "${mqtt_path}/relay-b/state"
+            payload: "ON"
+            retain: True
+    - topic: "${mqtt_path}/relay-b/command"
+      payload: "OFF"
+      then:
+        - uart.write: [0xA0, 0x02, 0x00, 0xA2]
+        - mqtt.publish:
+            topic: "${mqtt_path}/relay-b/state"
+            payload: "OFF"
+            retain: True
+    - topic: "${mqtt_path}/relay-c/command"
+      payload: "ON"
+      then:
+        - uart.write: [0xA0, 0x03, 0x01, 0xA4]
+        - mqtt.publish:
+            topic: "${mqtt_path}/relay-c/state"
+            payload: "ON"
+            retain: True
+    - topic: "${mqtt_path}/relay-c/command"
+      payload: "OFF"
+      then:
+        - uart.write: [0xA0, 0x03, 0x00, 0xA3]
+        - mqtt.publish:
+            topic: "${mqtt_path}/relay-c/state"
+            payload: "OFF"
+            retain: True
+    - topic: "${mqtt_path}/relay-d/command"
+      payload: "ON"
+      then:
+        - uart.write: [0xA0, 0x04, 0x01, 0xA5]
+        - mqtt.publish:
+            topic: "${mqtt_path}/relay-d/state"
+            payload: "ON"
+            retain: True
+    - topic: "${mqtt_path}/relay-d/command"
+      payload: "OFF"
+      then:
+        - uart.write: [0xA0, 0x04, 0x00, 0xA4]
+        - mqtt.publish:
+            topic: "${mqtt_path}/relay-d/state"
+            payload: "OFF"
+            retain: True
 
-
-# switch:
-#   - platform: uart
-#     name: "A1on"
-#     data: [0xA0, 0x01, 0x01, 0xA2]
-# 
-#   - platform: uart
-#     name: "A1off"
-#     data: [0xA0, 0x01, 0x00, 0xA1]
-# 
-#   - platform: uart
-#     name: "A2on"
-#     data: [0xA0, 0x02, 0x01, 0xA3]
-# 
-#   - platform: uart
-#     name: "A2off"
-#     data: [0xA0, 0x02, 0x00, 0xA2]
-# 
-#   - platform: uart
-#     name: "A3on"
-#     data: [0xA0, 0x03, 0x01, 0xA4]
-# 
-#   - platform: uart
-#     name: "A3off"
-#     data: [0xA0, 0x03, 0x00, 0xA3]
-# 
-#   - platform: uart
-#     name: "A4on"
-#     data: [0xA0, 0x04, 0x01, 0xA5]
-# 
-#   - platform: uart
-#     name: "A4off"
-#     data: [0xA0, 0x04, 0x00, 0xA4]
-# 
-#   - platform: restart
-#     name: "4switch_a Restart"
-
-# Enable Home Assistant API
 api:
   password: !secret api_password
 
